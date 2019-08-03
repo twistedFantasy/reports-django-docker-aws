@@ -1,0 +1,90 @@
+version: '3.7'
+
+networks:
+  network:
+    driver: bridge
+
+volumes:
+  api-data:
+  redis-data:
+  portainer-data:
+  postgres-data:
+
+services:
+  api:
+    build:
+      context: ./
+      dockerfile: srt/docker/Dockerfile
+      args:
+         IMAGE: "python:3.7.3"
+         APP_PATH: "/usr/src/srt/"
+    restart: on-failure
+    env_file:
+      - srt/docker/local.env
+    ports:
+      - target: 8000
+        published: 8000
+        protocol: tcp
+        mode: host
+    volumes:
+      - ./srt:/usr/src/srt/
+      - api-data:/var/srt/data/
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - network
+
+  worker:
+    build:
+      context: ./
+      dockerfile: srt/docker/Dockerfile
+      args:
+        IMAGE: "python:3.7.3"
+        APP_PATH: "/usr/src/srt/"
+    command: /usr/local/bin/celery -A srt worker -E -l debug -c 1 -Q celery-report -n celery-report
+    restart: on-failure
+    env_file:
+      - srt/docker/local.env
+    volumes:
+      - ./srt:/usr/src/srt/
+      - api-data:/var/srt/data/
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - network
+
+  postgres:
+    image: "postgres:11.4-alpine"
+    env_file:
+      - srt/docker/local.env
+    ports:
+      - target: 5432
+        published: 5432
+        protocol: tcp
+        mode: host
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - network
+
+  redis:
+    image: "redis:5.0.5-alpine"
+    volumes:
+      - redis-data:/data
+    networks:
+      - network
+
+  portainer:
+    image: portainer/portainer:1.21.0
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - portainer-data:/data
+    ports:
+      - target: 9000
+        published: 9000
+        protocol: tcp
+        mode: host
+    networks:
+      - network
