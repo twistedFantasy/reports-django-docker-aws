@@ -3,16 +3,13 @@ import json
 from django.db import models
 from model_utils import Choices
 
-from srt.core.models import BaseModel
+from srt.core.models import BaseModel, STATUS
 
-
-STATUS = Choices('pending', 'processing', 'stopped', 'failed', 'completed')
-BUSY = [STATUS.pending, STATUS.processing]
-DONE = [STATUS.completed]
+UID = Choices('report1', 'report2')
 
 
 class Report(BaseModel):
-    uid = models.CharField('Unique ID', max_length=64, null=True)
+    uid = models.CharField('Unique ID', max_length=64, choices=UID, default=UID.report1)
     name = models.CharField('Name', max_length=128)
     description = models.TextField(null=True, blank=True)
     params = models.TextField('Params', null=True)
@@ -25,9 +22,11 @@ class Report(BaseModel):
     def __str__(self):
         return f'{self.name} (report {self.id})'
 
-    def launch(self, start_date, end_date):
+    def launch(self, start_date=None, end_date=None):
         from srt.reports.configs import REPORTS
-        params = {'start_date': start_date, 'end_date': end_date}
+        params = json.loads(self.params or '{}')
+        if start_date and end_date:
+            params = {**{'start_date': start_date, 'end_date': end_date}, **params}
         return History.launch(REPORTS[self.uid], params=params, **{'report': self})
 
 
@@ -54,7 +53,6 @@ class History(BaseModel):
         history.params = json.dumps(params, indent=2, sort_keys=True)
         history.save()
 
-        params = {**params, **{'history_id': history.id}}
-        task_id = task.delay(**params).task_id
+        task_id = task.delay(**{'history_id': history.id}).task_id
         history.task_id = task_id
         history.save(update_fields=['task_id'])

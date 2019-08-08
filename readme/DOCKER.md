@@ -24,5 +24,5 @@ chmod +x /usr/local/bin/docker-compose
 ### Development
 To start project from docker-compose
 ```
-$ docker-compose -f docker-compose.yml up -d 
+$ docker-compose -f docker-compose-local.yml up -d 
 ```

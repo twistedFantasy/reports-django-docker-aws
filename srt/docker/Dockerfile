@@ -15,4 +15,4 @@ COPY srt/Pipfile srt/Pipfile.lock ./
 RUN pipenv install --system --deploy
 COPY srt/ .
 
-CMD python3 manage.py migrate && python3 manage.py runserver 0.0.0.0:8000
+CMD python3 manage.py collectstatic --no-input --clear && python3 manage.py migrate && python3 manage.py runserver 0.0.0.0:8000

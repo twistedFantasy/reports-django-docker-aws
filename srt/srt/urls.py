@@ -6,6 +6,7 @@ from rest_framework import routers
 from rest_framework_simplejwt.views import TokenRefreshView, TokenVerifyView
 
 from srt.users.views import UserViewSet, ChangePasswordView, SRTTokenObtainPairView
+from srt.reports.views import ReportViewSet, HistoryViewSet
 
 
 admin.autodiscover()
@@ -15,6 +16,8 @@ admin.site.site_title = settings.NAME + suffix
 
 router = routers.DefaultRouter()
 router.register(r'users', UserViewSet)
+router.register(r'reports', ReportViewSet)
+router.register(r'histories', HistoryViewSet)
 
 urlpatterns = [
     # built-in
@@ -28,4 +31,4 @@ urlpatterns = [
     # our apps
     path('api/v1/', include(router.urls)),
     path('api/v1/change/password/', ChangePasswordView.as_view(), name='change_password'),
-]
+] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

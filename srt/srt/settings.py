@@ -45,15 +45,17 @@ INSTALLED_APPS = [
     # 3rd party
     'corsheaders',
     'djcelery_email',
+    'django_celery_beat',
     'debug_toolbar',
-    'rest_framework',
     'django_filters',
+    'rest_framework',
 
     # srt
     'srt.core.apps.Config',
     'srt.core',
     'srt.users',
     'srt.reports',
+    'srt.deliveries',
 ]
 
 MIDDLEWARE = [
@@ -154,6 +156,12 @@ EMAIL_USE_TLS = True
 EMAIL_USE_SSL = False
 DEFAULT_FROM_EMAIL = 'do.not.reply@codex-soft.com'
 
+# aws
+AWS_KEY = os.environ['AWS_KEY']
+AWS_SECRET = os.environ['AWS_SECRET']
+AWS_BUCKET = os.environ['AWS_BUCKET']
+AWS_S3_BASE_URL = f"https://{os.environ['AWS_BUCKET']}.s3.amazonaws.com"
+
 # redis / celery
 CELERY_DATE_FORMAT = '%Y-%m-%d %H:%M:%S %z'
 CELERY_BROKER_URL = os.environ['CELERY_BROKER_URL']
@@ -170,25 +178,50 @@ CELERY_TASK_QUEUES = {
         "exchange_type": "topic",
         "binding_key": "general.#",
     },
-    "celery-report": {
+    "celery-reports": {
         "exchange": "report",
         "exchange_type": "topic",
         "binding_key": "report.#",
+    },
+    "celery-deliveries": {
+        "exchange": "delivery",
+        "exchange_type": "topic",
+        "binding_key": "delivery.#",
     }
 }
 CELERY_TASK_ROUTES = {
     "srt.reports.tasks.report1.Report1": {
-        "queue": "celery-report",
+        "queue": "celery-reports",
         "routing_key": "report.report1",
     },
     "srt.reports.tasks.report2.Report2": {
-        "queue": "celery-report",
+        "queue": "celery-reports",
         "routing_key": "report.report2",
+    },
+    "srt.deliveries.tasks.s3.S3Transport": {
+        "queue": "celery-deliveries",
+        "routing_key": "delivery.s3",
+    },
+    "srt.deliveries.tasks.ftp.FtpTransport": {
+        "queue": "celery-deliveries",
+        "routing_key": "delivery.ftp",
+    },
+    "srt.deliveries.tasks.sftp.SftpTransport": {
+        "queue": "celery-deliveries",
+        "routing_key": "delivery.sftp",
+    },
+    "srt.deliveries.tasks.email.EmailTransport": {
+        "queue": "celery-deliveries",
+        "routing_key": "delivery.email",
     },
 }
 CELERY_IMPORTS = [
     "srt.reports.tasks.report1",
     "srt.reports.tasks.report2",
+    "srt.deliveries.tasks.s3",
+    "srt.deliveries.tasks.ftp",
+    "srt.deliveries.tasks.sftp",
+    "srt.deliveries.tasks.email",
 ]
 
 # auth
@@ -223,6 +256,19 @@ REST_FRAMEWORK = {
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.LimitOffsetPagination',
     'PAGE_SIZE': 10
 }
+
+# static files (CSS, JavaScript, Images)
+STATIC_ROOT = "/usr/src/static"
+STATIC_URL = "/static/"
+STATICFILES_DIRS = (
+  '/usr/src/srt/static',
+)
+
+# admin
+ADMIN_URL = os.environ['ADMIN_URL']
+
+# Codemirror
+CODEMIRROR_PATH = 'components/codemirror-5.48.2'  # latest changeset from github
 
 # tests
 TEST_STAFFUSER_EMAIL = 'test.staffuser@gmail.com'

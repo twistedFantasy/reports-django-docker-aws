@@ -35,7 +35,7 @@ services:
     networks:
       - network
 
-  worker:
+  worker-report:
     build:
       context: ./
       dockerfile: srt/docker/Dockerfile
@@ -43,6 +43,46 @@ services:
         IMAGE: "python:3.7.3"
         APP_PATH: "/usr/src/srt/"
     command: /usr/local/bin/celery -A srt worker -E -l debug -c 1 -Q celery-report -n celery-report
+    restart: on-failure
+    env_file:
+      - srt/docker/local.env
+    volumes:
+      - ./srt:/usr/src/srt/
+      - api-data:/var/srt/data/
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - network
+
+  worker-delivery:
+    build:
+      context: ./
+      dockerfile: srt/docker/Dockerfile
+      args:
+        IMAGE: "python:3.7.3"
+        APP_PATH: "/usr/src/srt/"
+    command: /usr/local/bin/celery -A srt worker -E -l debug -c 1 -Q celery-delivery -n celery-delivery
+    restart: on-failure
+    env_file:
+      - srt/docker/local.env
+    volumes:
+      - ./srt:/usr/src/srt/
+      - api-data:/var/srt/data/
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - network
+
+  beat:
+    build:
+      context: ./
+      dockerfile: srt/docker/Dockerfile
+      args:
+        IMAGE: "python:3.7.3"
+        APP_PATH: "/usr/src/srt/"
+    command: /usr/local/bin/celery -A srt beat -l debug --scheduler django_celery_beat.schedulers:DatabaseScheduler
     restart: on-failure
     env_file:
       - srt/docker/local.env
