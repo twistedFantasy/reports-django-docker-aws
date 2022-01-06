@@ -8,7 +8,7 @@ verify_ssl = true
 [packages]
 django = "==2.2.4"
 redis = "==3.2.1"
-celery = "==4.3.0"
+celery = "==5.2.2"
 flower = "==0.9.3"
 psycopg2-binary = "==2.8.3"
 django-cors-headers = "==3.0.2"
